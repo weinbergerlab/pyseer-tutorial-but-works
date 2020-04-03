@@ -9,6 +9,7 @@ This is the code for [pyseer prediction tutorial](https://pyseer.readthedocs.io/
 First some Docker setup business, though.
 
 ```{r setup, include = FALSE}
+renv::restore(confirm=FALSE)
 library(docknitr)
 docknitr::docker_alias("pyseer", image="pyseer", command="bash", share.files=TRUE)
 docknitr::docker_alias("python", image="pyseer", command="/conda/bin/python3.7", share.files=TRUE)
