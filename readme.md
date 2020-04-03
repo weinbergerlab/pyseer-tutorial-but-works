@@ -4,4 +4,4 @@ The [official Pyseer tutorials](https://pyseer.readthedocs.io/) gloss over some 
 
 You will need Docker Desktop to run this code; you can install it [from the official Docker site](https://www.docker.com/get-started).
 
-After installing Docker Desktop, open either `gwas.Rmd` or `prediction.Rmd` for the corresponding tutorial.
+After installing Docker Desktop, open either `prediction.Rmd` and follow along with the code
