@@ -23,3 +23,6 @@
 /train.pheno
 /output
 /test.pheno
+.Rproj.user
+/.RData
+/.Rhistory
