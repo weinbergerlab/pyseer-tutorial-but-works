@@ -1,0 +1,73 @@
+---
+title: "pyseer genome-wide association tutorial"
+author: "Ben Artin"
+date: "`r Sys.Date()`"
+---
+
+This is the code for [pyseer GWAS tutorial](https://pyseer.readthedocs.io/en/master/tutorial.html). The text of the tutorial is not included here; follow along the text of the tutorial on the official site, but run this code instead. Section names here are the same as section names on the official site, to make it easier to find your place.
+
+First some Docker setup business, though.
+
+```{r setup, include = FALSE}
+renv::restore(confirm=FALSE)
+library(docknitr)
+docknitr::docker_alias("pyseer", image="pyseer", command="bash", share.files=TRUE)
+docknitr::docker_alias("python", image="pyseer", command="/conda/bin/python3.7", share.files=TRUE)
+```
+
+```{bash}
+docker build --tag pyseer .
+```
+
+# Download tutorial files
+
+```{pyseer}
+wget --continue --no-verbose --output-document=pyseer_tutorial.tar.bz2 https://ndownloader.figshare.com/files/14091179
+tar xvf pyseer_tutorial.tar.bz2
+mkdir -p assemblies
+cd assemblies
+tar xf ../assemblies.tar.bz2
+```
+
+# SNP and COG association with fixed effects model
+
+¶2, "The first step is to estimate the population structure…"
+
+```{pyseer}
+mash sketch -s 10000 -o mash_sketch assemblies/*.fa
+```
+
+¶3, "Next, use these to calculate distances between all pairs of samples…"
+
+```{pyseer}
+mash dist mash_sketch.msh mash_sketch.msh| square_mash > mash.tsv
+```
+
+¶7, "We can now run the analysis on the COGs…"
+
+```{pyseer}
+pyseer --phenotypes resistances.pheno --pres gene_presence_absence.Rtab --distances mash.tsv --save-m mash_mds --max-dimensions 8 > penicillin_COGs.txt
+```
+
+¶9, "Take a look at the top hits…"
+
+```{pyseer}
+sort -g -k4,4 penicillin_COGs.txt | head
+```
+
+¶11, "We will now perform an analysis using the SNPs produced from mapping reads…"
+
+```{pyseer}
+pyseer --phenotypes resistances.pheno --vcf snps.vcf.gz --load-m mash_mds.pkl --lineage --print-samples > penicillin_SNPs.txt
+```
+
+# K-mer association with mixed effects model
+
+¶2, "First, count the k-mers from the assemblies…"
+
+```{pyseer}
+cd assemblies
+fsm-lite -l ../fsm_file_list.txt -s 6 -S 610 -v -t fsm_kmers | gzip -c - > ../fsm_kmers.txt.gz
+```
+
+**Stalled out here because what is `phylogeny_distance.py`?**

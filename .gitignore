@@ -26,3 +26,9 @@
 .Rproj.user
 /.RData
 /.Rhistory
+/fsm_kmers.txt.gz
+/lineage_effects.txt
+/mash_mds.pkl
+/mash.tsv
+/penicillin_COGs.txt
+/penicillin_SNPs.txt

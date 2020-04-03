@@ -16,3 +16,16 @@ RUN /conda/bin/conda config --add channels defaults
 RUN /conda/bin/conda config --add channels bioconda
 RUN /conda/bin/conda config --add channels conda-forge
 RUN /conda/bin/conda install -y pyseer poppunk
+
+# Install fsm-lite
+RUN \
+  apt-get -qq update && \
+  apt-get install -qq --yes --no-install-recommends build-essential zip unzip libsdsl-dev libsdsl3 libdivsufsort-dev && \
+  cd /tmp && \
+  curl -L -O https://github.com/nvalimak/fsm-lite/archive/v1.0-stable.zip && \
+  unzip v1.0-stable.zip && \
+  cd fsm-lite-1.0-stable && \
+  make depend && make && \
+  cp fsm-lite /usr/local/bin && \
+  apt-get remove -qq --yes --no-install-recommends build-essential zip unzip libsdsl-dev && \
+  apt-get autoremove --yes
