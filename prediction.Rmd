@@ -1,0 +1,101 @@
+---
+title: "pyseer prediction tutorial"
+author: "Ben Artin"
+date: "`r Sys.Date()`"
+---
+
+This is the code for [pyseer prediction tutorial](https://pyseer.readthedocs.io/en/master/predict.html). The text of the tutorial is not included here; follow along the text of the tutorial on the official site, but run this code instead. Section names here are the same as section names on the official site, to make it easier to find your place.
+
+First some Docker setup business, though.
+
+```{r setup, include = FALSE}
+library(docknitr)
+docknitr::docker_alias("pyseer", image="pyseer", command="bash", share.files=TRUE)
+docknitr::docker_alias("python", image="pyseer", command="/conda/bin/python3.7", share.files=TRUE)
+```
+
+```{bash}
+docker build --tag pyseer .
+```
+
+# Download tutorial files
+
+On the official site, this code is mentioned at the top of the GWAS tutorial, but left out of the prediction tutorial. 
+
+```{pyseer}
+wget --continue --no-verbose --output-document=pyseer_tutorial.tar.bz2 https://ndownloader.figshare.com/files/14091179
+tar xvf pyseer_tutorial.tar.bz2
+mkdir -p assemblies
+cd assemblies
+tar xf ../assemblies.tar.bz2
+```
+
+# Fitting a whole-genome model
+
+¶2, "Here we will try and find SNPs…"
+
+```{pyseer}
+mkdir -p output
+pyseer --vcf snps.vcf.gz --phenotypes resistances.pheno --wg enet \
+--save-vars output/ma_snps --save-model penicillin.lasso --cpu 4 --alpha 1 > selected.txt
+```
+
+Second chunk of code, under "We can use a value closer to ridge regression if desired…", left as an exercise for the reader.
+
+# Accounting for population structure
+
+Run PopPUNK. This is implied by the official tutorial *and* PopPUNK documentation gives incorrect instructions for how to create `reference_list.txt`.
+
+```{pyseer}
+ls assemblies/*.contigs_velvet.fa > reference_list.txt
+poppunk --easy-run --r-files reference_list.txt --output clusters --threads 4 --plot-fit 5 --min-k 13 --full-db
+```
+
+
+Convert output from poppunk into the form required by pyseer. This is implied by the official tutorial, here we make it explicit
+
+```{python}
+import csv, re
+reader = csv.DictReader(open("clusters/clusters_clusters.csv"))
+writer = csv.DictWriter(open("lineages.txt", "w"), delimiter=' ', fieldnames=reader.fieldnames)
+for row in reader:
+  row['Taxon'] = re.match(r'.*/(.*)\.contigs_velvet\.fa', row['Taxon']).group(1)
+  writer.writerow(row)
+```
+
+All code from here on in the official tutorial incorrectly uses `--lineage-clusters poppunk_clusters.csv` where it should be using `--lineage-clusters lineages.txt`.
+
+¶4, "Now add this to the analysis…"
+
+```{pyseer}
+pyseer --vcf snps.vcf.gz --phenotypes resistances.pheno --wg enet \
+--load-vars output/ma_snps --lineage-clusters lineages.txt --sequence-reweighting
+```
+
+# Using the model to predict phenotype in new samples
+
+¶1, "The elastic net models can be used"
+
+```{pyseer}
+head -500 resistances.pheno > train.pheno
+cat <(head -1 resistances.pheno) <(tail -104 resistances.pheno) > test.pheno
+cut -f 1 test.pheno | sed '1d' > test.samples
+```
+
+¶3, "We will use lasso regression as fewer variants are selected"
+
+Note change from `--cpu 4` to `--cpu 1`. Memory needed by pyseer scales linearly with the number of CPUs used, and I was running out of memory when using 4 CPUs. There are better ways to handle this, but switching to a single CPU was easiest. If you are trying to optimize performance of a more time-consuming analysis than this one, you probably want to give pyseer as much memory and as many CPUs as you can afford to.
+
+```{pyseer}
+pyseer --vcf snps.vcf.gz --phenotypes train.pheno --wg enet \
+--load-vars output/ma_snps --alpha 1 --save-model test_lasso --cpu 1 \
+--lineage-clusters lineages.txt --sequence-reweighting
+```
+
+¶5, "`enet_predict` is used to make the predictions"
+
+```{pyseer}
+enet_predict_pyseer --vcf snps.vcf.gz --lineage-clusters lineages.txt --true-values test.pheno \
+test_lasso.pkl test.samples > test_predictions.txt
+```
+
