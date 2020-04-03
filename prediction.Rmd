@@ -11,8 +11,8 @@ First some Docker setup business, though.
 ```{r setup, include = FALSE}
 renv::restore(confirm=FALSE)
 library(docknitr)
-docknitr::docker_alias("pyseer.bash", image="pyseer", command="bash", share.files=TRUE)
-docknitr::docker_alias("pyseer.python", image="pyseer", command="/conda/bin/python3.7", share.files=TRUE)
+docknitr::docker_alias("pyseer_bash", image="pyseer", command="bash", share.files=TRUE)
+docknitr::docker_alias("pyseer_python", image="pyseer", command="/conda/bin/python3.7", share.files=TRUE)
 ```
 
 ```{bash}
@@ -23,7 +23,7 @@ docker build --tag pyseer .
 
 On the official site, this code is mentioned at the top of the GWAS tutorial, but left out of the prediction tutorial. 
 
-```{pyseer.bash}
+```{pyseer_bash}
 wget --continue --no-verbose --output-document=pyseer_tutorial.tar.bz2 https://ndownloader.figshare.com/files/14091179
 tar xvf pyseer_tutorial.tar.bz2
 mkdir -p assemblies
@@ -35,7 +35,7 @@ tar xf ../assemblies.tar.bz2
 
 ¶2, "Here we will try and find SNPs…"
 
-```{pyseer.bash}
+```{pyseer_bash}
 mkdir -p output
 pyseer --vcf snps.vcf.gz --phenotypes resistances.pheno --wg enet \
 --save-vars output/ma_snps --save-model penicillin.lasso --cpu 4 --alpha 1 > selected.txt
@@ -47,7 +47,7 @@ Second chunk of code, under "We can use a value closer to ridge regression if de
 
 Run PopPUNK. This is implied by the official tutorial *and* PopPUNK documentation gives incorrect instructions for how to create `reference_list.txt`.
 
-```{pyseer.bash}
+```{pyseer_bash}
 ls assemblies/*.contigs_velvet.fa > reference_list.txt
 poppunk --easy-run --r-files reference_list.txt --output clusters --threads 4 --plot-fit 5 --min-k 13 --full-db
 ```
@@ -55,7 +55,7 @@ poppunk --easy-run --r-files reference_list.txt --output clusters --threads 4 --
 
 Convert output from poppunk into the form required by pyseer. This is implied by the official tutorial, here we make it explicit
 
-```{pyseer.python}
+```{pyseer_python}
 import csv, re
 reader = csv.DictReader(open("clusters/clusters_clusters.csv"))
 writer = csv.DictWriter(open("lineages.txt", "w"), delimiter=' ', fieldnames=reader.fieldnames)
@@ -68,7 +68,7 @@ All code from here on in the official tutorial incorrectly uses `--lineage-clust
 
 ¶4, "Now add this to the analysis…"
 
-```{pyseer.bash}
+```{pyseer_bash}
 pyseer --vcf snps.vcf.gz --phenotypes resistances.pheno --wg enet \
 --load-vars output/ma_snps --lineage-clusters lineages.txt --sequence-reweighting
 ```
@@ -77,7 +77,7 @@ pyseer --vcf snps.vcf.gz --phenotypes resistances.pheno --wg enet \
 
 ¶1, "The elastic net models can be used"
 
-```{pyseer.bash}
+```{pyseer_bash}
 head -500 resistances.pheno > train.pheno
 cat <(head -1 resistances.pheno) <(tail -104 resistances.pheno) > test.pheno
 cut -f 1 test.pheno | sed '1d' > test.samples
@@ -87,7 +87,7 @@ cut -f 1 test.pheno | sed '1d' > test.samples
 
 Note change from `--cpu 4` to `--cpu 1`. Memory needed by pyseer scales linearly with the number of CPUs used, and I was running out of memory when using 4 CPUs. There are better ways to handle this, but switching to a single CPU was easiest. If you are trying to optimize performance of a more time-consuming analysis than this one, you probably want to give pyseer as much memory and as many CPUs as you can afford to.
 
-```{pyseer.bash}
+```{pyseer_bash}
 pyseer --vcf snps.vcf.gz --phenotypes train.pheno --wg enet \
 --load-vars output/ma_snps --alpha 1 --save-model test_lasso --cpu 1 \
 --lineage-clusters lineages.txt --sequence-reweighting
@@ -95,7 +95,7 @@ pyseer --vcf snps.vcf.gz --phenotypes train.pheno --wg enet \
 
 ¶5, "`enet_predict` is used to make the predictions"
 
-```{pyseer.bash}
+```{pyseer_bash}
 enet_predict_pyseer --vcf snps.vcf.gz --lineage-clusters lineages.txt --true-values test.pheno \
 test_lasso.pkl test.samples > test_predictions.txt
 ```
