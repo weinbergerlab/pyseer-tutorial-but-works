@@ -85,7 +85,7 @@ cut -f 1 test.pheno | sed '1d' > test.samples
 
 ¶3, "We will use lasso regression as fewer variants are selected"
 
-Note change from `--cpu 4` to `--cpu 1`. Memory needed by pyseer scales linearly with the number of CPUs used, and I was running out of memory when using 4 CPUs. There are better ways to handle this, but switching to a single CPU was easiest. If you are trying to optimize performance of a more time-consuming analysis than this one, you probably want to give pyseer as much memory and as many CPUs as you can afford to.
+Note the change from `--cpu 4` to `--cpu 1`. Memory needed by pyseer scales linearly with the number of CPUs used, and I was running out of memory when using 4 CPUs. There are better ways to handle this, but switching to a single CPU was easiest. If you are trying to optimize performance of a more time-consuming analysis than this one, you probably want to give pyseer as much memory and as many CPUs as you can afford to.
 
 ```{pyseer_bash}
 pyseer --vcf snps.vcf.gz --phenotypes train.pheno --wg enet \
