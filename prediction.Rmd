@@ -29,6 +29,7 @@ tar xvf pyseer_tutorial.tar.bz2
 mkdir -p assemblies
 cd assemblies
 tar xf ../assemblies.tar.bz2
+cd ..
 ```
 
 # Fitting a whole-genome model
